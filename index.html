@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>ライフログ</title>
+
+<!-- iPhoneでホーム画面に追加したときにアプリらしく動かすための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ライフログ">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>ライフログ</h1>
+  <span id="todayLabel" class="today-label"></span>
+</header>
+
+<main>
+  <!-- 記録フォーム -->
+  <section class="card">
+    <div class="field">
+      <div class="field-label">気分</div>
+      <div id="moodGroup" class="mood-group">
+        <button type="button" class="mood-btn" data-mood="great">😄</button>
+        <button type="button" class="mood-btn" data-mood="good">🙂</button>
+        <button type="button" class="mood-btn" data-mood="normal">😐</button>
+        <button type="button" class="mood-btn" data-mood="bad">😔</button>
+        <button type="button" class="mood-btn" data-mood="worst">😣</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">やったこと</div>
+      <div id="activityGroup" class="chip-group">
+        <button type="button" class="chip" data-activity="仕事">仕事</button>
+        <button type="button" class="chip" data-activity="勉強">勉強</button>
+        <button type="button" class="chip" data-activity="運動">運動</button>
+        <button type="button" class="chip" data-activity="読書">読書</button>
+        <button type="button" class="chip" data-activity="家事">家事</button>
+        <button type="button" class="chip" data-activity="外出">外出</button>
+        <button type="button" class="chip" data-activity="食事">食事</button>
+        <button type="button" class="chip" data-activity="睡眠">睡眠</button>
+        <button type="button" class="chip" data-activity="趣味">趣味</button>
+        <button type="button" class="chip" data-activity="友人">友人</button>
+        <button type="button" class="chip" data-activity="休憩">休憩</button>
+        <button type="button" class="chip" data-activity="通院">通院</button>
+      </div>
+      <input type="text" id="activityCustom" class="text-input" placeholder="その他（自由入力・任意）">
+    </div>
+
+    <div class="field">
+      <div class="field-label">メモ<span class="optional">（任意）</span></div>
+      <textarea id="memoInput" class="text-input memo-input" rows="2" placeholder="気になったことなど"></textarea>
+    </div>
+  </section>
+</main>
+
+<div class="save-bar">
+  <button id="saveBtn" class="save-btn" type="button">記録する</button>
+</div>
+
+<section class="history">
+  <div id="historyList"></div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
