@@ -25,6 +25,9 @@ const todayLabel = document.getElementById("todayLabel");
 const formHeader = document.getElementById("formHeader");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const formCard = document.querySelector(".card");
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
 
 function loadEntries() {
   try {
@@ -250,6 +253,67 @@ historyList.addEventListener("click", (e) => {
     saveEntries(entries);
     if (state.editingId === id) resetForm();
     renderHistory();
+  }
+});
+
+exportBtn.addEventListener("click", () => {
+  const entries = loadEntries();
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lifelog-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast("書き出しました");
+});
+
+importBtn.addEventListener("click", () => {
+  importFile.click();
+});
+
+importFile.addEventListener("change", async () => {
+  const file = importFile.files[0];
+  importFile.value = "";
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) throw new Error("invalid format");
+
+    const existing = loadEntries();
+    const existingIds = new Set(existing.map((entry) => entry.id));
+    let addedCount = 0;
+
+    for (const entry of imported) {
+      if (
+        entry &&
+        typeof entry.id === "string" &&
+        typeof entry.timestamp === "number" &&
+        typeof entry.mood === "string" &&
+        !existingIds.has(entry.id)
+      ) {
+        existing.push({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          mood: entry.mood,
+          activities: Array.isArray(entry.activities) ? entry.activities : [],
+          memo: typeof entry.memo === "string" ? entry.memo : "",
+        });
+        existingIds.add(entry.id);
+        addedCount++;
+      }
+    }
+
+    saveEntries(existing);
+    renderHistory();
+    showToast(addedCount > 0 ? `${addedCount}件を復元しました` : "新しい記録はありませんでした");
+  } catch {
+    showToast("読み込みに失敗しました");
   }
 });
 
