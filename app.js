@@ -80,7 +80,7 @@ function renderHistory() {
       const time = formatTime(new Date(entry.timestamp));
       const activitiesText = entry.activities.join("・");
       html += `
-        <div class="entry">
+        <div class="entry" data-entry-id="${entry.id}">
           <div class="entry-mood">${MOOD_EMOJI[entry.mood] || ""}</div>
           <div class="entry-body">
             <div class="entry-time">${time}</div>
@@ -94,6 +94,11 @@ function renderHistory() {
     html += `</div>`;
   }
   historyList.innerHTML = html;
+}
+
+function scrollToEntry(id) {
+  const el = historyList.querySelector(`[data-entry-id="${id}"]`);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function escapeHtml(str) {
@@ -191,7 +196,8 @@ saveBtn.addEventListener("click", () => {
   const entries = loadEntries();
 
   if (state.editingId) {
-    const index = entries.findIndex((entry) => entry.id === state.editingId);
+    const editedId = state.editingId;
+    const index = entries.findIndex((entry) => entry.id === editedId);
     if (index !== -1) {
       entries[index] = {
         ...entries[index],
@@ -204,11 +210,13 @@ saveBtn.addEventListener("click", () => {
     resetForm();
     renderHistory();
     showToast("更新しました");
+    scrollToEntry(editedId);
     return;
   }
 
+  const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   entries.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: newId,
     timestamp: Date.now(),
     mood: state.mood,
     activities,
@@ -219,6 +227,7 @@ saveBtn.addEventListener("click", () => {
   resetForm();
   renderHistory();
   showToast("記録しました");
+  scrollToEntry(newId);
 });
 
 cancelEditBtn.addEventListener("click", () => {
