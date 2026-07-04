@@ -70,6 +70,10 @@ main {
   margin-bottom: 16px;
 }
 
+.form-header[hidden] {
+  display: none;
+}
+
 .form-header-label {
   font-size: 13px;
   font-weight: 700;
@@ -253,9 +257,15 @@ main {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 16px;
-  padding: 4px 6px;
-  min-width: 32px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entry-edit {
+  font-size: 22px;
 }
 
 .entry-edit:active {
@@ -263,7 +273,7 @@ main {
 }
 
 .entry-delete {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .entry-delete:active {
