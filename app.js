@@ -81,13 +81,15 @@ function renderHistory() {
     html += `<div class="history-day-label">${formatDateLabel(date)}</div>`;
     for (const entry of items) {
       const time = formatTime(new Date(entry.timestamp));
-      const activitiesText = entry.activities.join("・");
+      const tagsHtml = entry.activities
+        .map((activity) => `<span class="entry-tag">${escapeHtml(activity)}</span>`)
+        .join("");
       html += `
         <div class="entry" data-entry-id="${entry.id}">
           <div class="entry-mood">${MOOD_EMOJI[entry.mood] || ""}</div>
           <div class="entry-body">
             <div class="entry-time">${time}</div>
-            ${activitiesText ? `<div class="entry-activities">${escapeHtml(activitiesText)}</div>` : ""}
+            ${tagsHtml ? `<div class="entry-tags">${tagsHtml}</div>` : ""}
             ${entry.memo ? `<div class="entry-memo">${escapeHtml(entry.memo)}</div>` : ""}
           </div>
           <button type="button" class="entry-edit" data-id="${entry.id}">✎</button>
