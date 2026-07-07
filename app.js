@@ -14,6 +14,7 @@ const state = {
   editingId: null,
 };
 
+const entryDateTime = document.getElementById("entryDateTime");
 const moodGroup = document.getElementById("moodGroup");
 const activityGroup = document.getElementById("activityGroup");
 const activityCustom = document.getElementById("activityCustom");
@@ -57,6 +58,11 @@ function formatDateLabel(date) {
 
 function formatTime(date) {
   return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+}
+
+function toDatetimeLocalValue(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function renderHistory() {
@@ -126,6 +132,7 @@ function resetForm() {
   activityGroup.querySelectorAll(".chip").forEach((c) => c.classList.remove("selected"));
   activityCustom.value = "";
   memoInput.value = "";
+  entryDateTime.value = toDatetimeLocalValue(new Date());
   formHeader.hidden = true;
   saveBtn.textContent = "記録する";
 }
@@ -153,6 +160,7 @@ function startEdit(entry) {
   });
   activityCustom.value = customActivities.join("、");
   memoInput.value = entry.memo || "";
+  entryDateTime.value = toDatetimeLocalValue(new Date(entry.timestamp));
 
   state.editingId = entry.id;
   formHeader.hidden = false;
@@ -198,6 +206,9 @@ saveBtn.addEventListener("click", () => {
     custom.split(/[、,]/).map((s) => s.trim()).filter(Boolean).forEach((a) => activities.push(a));
   }
 
+  const parsedDate = entryDateTime.value ? new Date(entryDateTime.value) : new Date();
+  const timestamp = isNaN(parsedDate.getTime()) ? Date.now() : parsedDate.getTime();
+
   const entries = loadEntries();
 
   if (state.editingId) {
@@ -206,6 +217,7 @@ saveBtn.addEventListener("click", () => {
     if (index !== -1) {
       entries[index] = {
         ...entries[index],
+        timestamp,
         mood: state.mood,
         activities,
         memo: memoInput.value.trim(),
@@ -222,7 +234,7 @@ saveBtn.addEventListener("click", () => {
   const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   entries.push({
     id: newId,
-    timestamp: Date.now(),
+    timestamp,
     mood: state.mood,
     activities,
     memo: memoInput.value.trim(),
@@ -324,6 +336,8 @@ todayLabel.textContent = new Date().toLocaleDateString("ja-JP", {
   day: "numeric",
   weekday: "short",
 });
+
+entryDateTime.value = toDatetimeLocalValue(new Date());
 
 renderHistory();
 
