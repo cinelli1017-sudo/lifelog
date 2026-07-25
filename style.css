@@ -57,11 +57,35 @@ body {
   margin: 3px 0 0;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .today-label {
   font-family: var(--font-stamp);
   font-size: 13px;
   color: var(--muted);
   padding-top: 2px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--muted);
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.icon-btn:active {
+  color: var(--stamp-text);
+  background: var(--washi-soft);
 }
 
 main {

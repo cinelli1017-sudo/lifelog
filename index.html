@@ -24,7 +24,10 @@
     <h1>ライフログ</h1>
     <p class="log-tag">Daily Record</p>
   </div>
-  <span id="todayLabel" class="today-label"></span>
+  <div class="topbar-right">
+    <span id="todayLabel" class="today-label"></span>
+    <button type="button" id="shareTextBtn" class="icon-btn" aria-label="メモ帳に書き出す" title="メモ帳に書き出す">📤</button>
+  </div>
 </header>
 
 <main>
@@ -84,7 +87,6 @@
 </section>
 
 <section class="backup-section">
-  <button type="button" id="shareTextBtn" class="text-btn">メモ帳に書き出す</button>
   <button type="button" id="exportBtn" class="text-btn">バックアップを書き出す</button>
   <button type="button" id="importBtn" class="text-btn">バックアップから復元する</button>
   <input type="file" id="importFile" accept="application/json" hidden>
