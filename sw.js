@@ -1,4 +1,4 @@
-const CACHE_NAME = "lifelog-cache-v4";
+const CACHE_NAME = "lifelog-cache-v5";
 const ASSETS = [
   "./",
   "./index.html",

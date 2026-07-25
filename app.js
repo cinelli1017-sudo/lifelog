@@ -11,6 +11,14 @@ const MOOD_EMOJI = {
   worst: "😣",
 };
 
+const MOOD_LABEL = {
+  great: "最高",
+  good: "良い",
+  normal: "普通",
+  bad: "微妙",
+  worst: "最悪",
+};
+
 const state = {
   mood: null,
   activities: new Set(),
@@ -32,6 +40,7 @@ const formCard = document.querySelector(".card");
 const exportBtn = document.getElementById("exportBtn");
 const importBtn = document.getElementById("importBtn");
 const importFile = document.getElementById("importFile");
+const shareTextBtn = document.getElementById("shareTextBtn");
 
 function loadEntries() {
   try {
@@ -61,6 +70,51 @@ function formatDateLabel(date) {
 
 function formatTime(date) {
   return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatFullDateLabel(date) {
+  const weekday = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日(${weekday})`;
+}
+
+// メモ帳などに貼り付けやすいプレーンテキストの日記形式に変換する
+function buildEntriesText(entries) {
+  const sorted = [...entries].sort((a, b) => b.timestamp - a.timestamp);
+
+  const groups = new Map();
+  for (const entry of sorted) {
+    const date = new Date(entry.timestamp);
+    const key = date.toDateString();
+    if (!groups.has(key)) groups.set(key, { date, items: [] });
+    groups.get(key).items.push(entry);
+  }
+
+  const lines = ["ライフログ"];
+  for (const { date, items } of groups.values()) {
+    lines.push("", formatFullDateLabel(date));
+    for (const entry of items) {
+      const time = formatTime(new Date(entry.timestamp));
+      const moodText = `${MOOD_EMOJI[entry.mood] || ""} ${MOOD_LABEL[entry.mood] || entry.mood}`;
+      const tagsText = entry.activities.length > 0 ? ` ｜ ${entry.activities.join("、")}` : "";
+      lines.push(`${time} ${moodText}${tagsText}`);
+      if (entry.memo) lines.push(entry.memo);
+      if (entry.aiComment) lines.push(`💬 ${entry.aiComment}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function downloadTextFile(text) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lifelog-${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function toDatetimeLocalValue(date) {
@@ -305,6 +359,34 @@ historyList.addEventListener("click", (e) => {
     saveEntries(entries);
     if (state.editingId === id) resetForm();
     renderHistory();
+  }
+});
+
+shareTextBtn.addEventListener("click", async () => {
+  const entries = loadEntries();
+  if (entries.length === 0) {
+    showToast("まだ記録がありません");
+    return;
+  }
+  const text = buildEntriesText(entries);
+
+  // iPhoneなど共有シートがあれば、そこから直接「メモ」アプリへ渡せる
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "ライフログ", text });
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      // 共有に失敗した場合はクリップボード経由にフォールバックする
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("コピーしました。メモ帳に貼り付けてください");
+  } catch {
+    downloadTextFile(text);
+    showToast("ファイルとして書き出しました");
   }
 });
 
