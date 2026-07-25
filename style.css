@@ -318,13 +318,6 @@ main {
   min-width: 0;
 }
 
-.entry-time {
-  font-family: var(--font-stamp);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-}
-
 .entry-tags {
   display: flex;
   flex-wrap: wrap;

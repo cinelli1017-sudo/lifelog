@@ -68,10 +68,6 @@ function formatDateLabel(date) {
   return `${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
-function formatTime(date) {
-  return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-}
-
 function formatFullDateLabel(date) {
   const weekday = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日(${weekday})`;
@@ -93,10 +89,9 @@ function buildEntriesText(entries) {
   for (const { date, items } of groups.values()) {
     lines.push("", formatFullDateLabel(date));
     for (const entry of items) {
-      const time = formatTime(new Date(entry.timestamp));
       const moodText = `${MOOD_EMOJI[entry.mood] || ""} ${MOOD_LABEL[entry.mood] || entry.mood}`;
       const tagsText = entry.activities.length > 0 ? ` ｜ ${entry.activities.join("、")}` : "";
-      lines.push(`${time} ${moodText}${tagsText}`);
+      lines.push(`${moodText}${tagsText}`);
       if (entry.memo) lines.push(entry.memo);
       if (entry.aiComment) lines.push(`💬 ${entry.aiComment}`);
     }
@@ -117,9 +112,16 @@ function downloadTextFile(text) {
   URL.revokeObjectURL(url);
 }
 
-function toDatetimeLocalValue(date) {
+function toDateInputValue(date) {
   const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// "YYYY-MM-DD" をタイムゾーンのずれなくローカル日付として解釈する
+function parseDateInputValue(value) {
+  if (!value) return new Date();
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 function renderHistory() {
@@ -143,7 +145,6 @@ function renderHistory() {
     html += `<div class="history-day">`;
     html += `<div class="history-day-label">${formatDateLabel(date)}</div>`;
     for (const entry of items) {
-      const time = formatTime(new Date(entry.timestamp));
       const tagsHtml = entry.activities
         .map((activity) => `<span class="entry-tag">${escapeHtml(activity)}</span>`)
         .join("");
@@ -151,7 +152,6 @@ function renderHistory() {
         <div class="entry" data-entry-id="${entry.id}">
           <div class="entry-mood">${MOOD_EMOJI[entry.mood] || ""}</div>
           <div class="entry-body">
-            <div class="entry-time">${time}</div>
             ${tagsHtml ? `<div class="entry-tags">${tagsHtml}</div>` : ""}
             ${entry.memo ? `<div class="entry-memo">${escapeHtml(entry.memo)}</div>` : ""}
             ${entry.aiComment ? `<div class="entry-ai-comment">${escapeHtml(entry.aiComment)}</div>` : ""}
@@ -218,7 +218,7 @@ function resetForm() {
   activityGroup.querySelectorAll(".chip").forEach((c) => c.classList.remove("selected"));
   activityCustom.value = "";
   memoInput.value = "";
-  entryDateTime.value = toDatetimeLocalValue(new Date());
+  entryDateTime.value = toDateInputValue(new Date());
   formHeader.hidden = true;
   saveBtn.textContent = "記録する";
 }
@@ -246,7 +246,7 @@ function startEdit(entry) {
   });
   activityCustom.value = customActivities.join("、");
   memoInput.value = entry.memo || "";
-  entryDateTime.value = toDatetimeLocalValue(new Date(entry.timestamp));
+  entryDateTime.value = toDateInputValue(new Date(entry.timestamp));
 
   state.editingId = entry.id;
   formHeader.hidden = false;
@@ -292,7 +292,7 @@ saveBtn.addEventListener("click", () => {
     custom.split(/[、,]/).map((s) => s.trim()).filter(Boolean).forEach((a) => activities.push(a));
   }
 
-  const parsedDate = entryDateTime.value ? new Date(entryDateTime.value) : new Date();
+  const parsedDate = parseDateInputValue(entryDateTime.value);
   const timestamp = isNaN(parsedDate.getTime()) ? Date.now() : parsedDate.getTime();
 
   const entries = loadEntries();
@@ -458,7 +458,7 @@ todayLabel.textContent = new Date().toLocaleDateString("ja-JP", {
   weekday: "short",
 });
 
-entryDateTime.value = toDatetimeLocalValue(new Date());
+entryDateTime.value = toDateInputValue(new Date());
 
 renderHistory();
 
