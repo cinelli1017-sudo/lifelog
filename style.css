@@ -324,6 +324,21 @@ main {
   word-break: break-word;
 }
 
+.entry-ai-comment {
+  font-size: 13px;
+  color: var(--stamp-text);
+  background: var(--washi-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.entry-ai-comment::before {
+  content: "💬 ";
+}
+
 .entry-edit,
 .entry-delete {
   background: none;

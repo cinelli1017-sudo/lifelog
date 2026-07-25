@@ -1,5 +1,8 @@
 const STORAGE_KEY = "lifelog.entries";
 
+// AIひとことコメントを生成するVercelサーバーレス関数のURL
+const AI_COMMENT_API_URL = "https://life-log-self.vercel.app/api/comment";
+
 const MOOD_EMOJI = {
   great: "😄",
   good: "🙂",
@@ -97,6 +100,7 @@ function renderHistory() {
             <div class="entry-time">${time}</div>
             ${tagsHtml ? `<div class="entry-tags">${tagsHtml}</div>` : ""}
             ${entry.memo ? `<div class="entry-memo">${escapeHtml(entry.memo)}</div>` : ""}
+            ${entry.aiComment ? `<div class="entry-ai-comment">${escapeHtml(entry.aiComment)}</div>` : ""}
           </div>
           <button type="button" class="entry-edit" data-id="${entry.id}">✎</button>
           <button type="button" class="entry-delete" data-id="${entry.id}">×</button>
@@ -116,6 +120,34 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+async function fetchAiComment(mood, activities, memo) {
+  try {
+    const response = await fetch(AI_COMMENT_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mood, activities, memo }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return typeof data.comment === "string" ? data.comment : null;
+  } catch {
+    return null;
+  }
+}
+
+// 記録を待たせないよう、AIコメントは保存・表示のあとに非同期で取得して追記する
+function requestAiComment(id, mood, activities, memo) {
+  fetchAiComment(mood, activities, memo).then((comment) => {
+    if (!comment) return;
+    const entries = loadEntries();
+    const index = entries.findIndex((entry) => entry.id === id);
+    if (index === -1) return;
+    entries[index] = { ...entries[index], aiComment: comment };
+    saveEntries(entries);
+    renderHistory();
+  });
 }
 
 function showToast(message) {
@@ -213,14 +245,16 @@ saveBtn.addEventListener("click", () => {
 
   if (state.editingId) {
     const editedId = state.editingId;
+    const editedMood = state.mood;
+    const editedMemo = memoInput.value.trim();
     const index = entries.findIndex((entry) => entry.id === editedId);
     if (index !== -1) {
       entries[index] = {
         ...entries[index],
         timestamp,
-        mood: state.mood,
+        mood: editedMood,
         activities,
-        memo: memoInput.value.trim(),
+        memo: editedMemo,
       };
     }
     saveEntries(entries);
@@ -228,16 +262,19 @@ saveBtn.addEventListener("click", () => {
     renderHistory();
     showToast("更新しました");
     scrollToEntry(editedId);
+    requestAiComment(editedId, editedMood, activities, editedMemo);
     return;
   }
 
   const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newMood = state.mood;
+  const memo = memoInput.value.trim();
   entries.push({
     id: newId,
     timestamp,
-    mood: state.mood,
+    mood: newMood,
     activities,
-    memo: memoInput.value.trim(),
+    memo,
   });
   saveEntries(entries);
 
@@ -245,6 +282,7 @@ saveBtn.addEventListener("click", () => {
   renderHistory();
   showToast("記録しました");
   scrollToEntry(newId);
+  requestAiComment(newId, newMood, activities, memo);
 });
 
 cancelEditBtn.addEventListener("click", () => {
@@ -317,6 +355,7 @@ importFile.addEventListener("change", async () => {
           mood: entry.mood,
           activities: Array.isArray(entry.activities) ? entry.activities : [],
           memo: typeof entry.memo === "string" ? entry.memo : "",
+          ...(typeof entry.aiComment === "string" ? { aiComment: entry.aiComment } : {}),
         });
         existingIds.add(entry.id);
         addedCount++;
