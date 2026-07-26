@@ -31,8 +31,15 @@
 </header>
 
 <main>
+  <!-- 週の振り返り -->
+  <section class="card weekly-review">
+    <div class="field-label" id="weeklyReviewRange">今週の振り返り</div>
+    <div id="weeklyReviewText" class="weekly-review-text"></div>
+    <button type="button" id="weeklyReviewBtn" class="text-btn">振り返る</button>
+  </section>
+
   <!-- 記録フォーム -->
-  <section class="card">
+  <section class="card" id="entryFormCard">
     <div id="formHeader" class="form-header" hidden>
       <span class="form-header-label">編集中</span>
       <button type="button" id="cancelEditBtn" class="cancel-link">キャンセル</button>

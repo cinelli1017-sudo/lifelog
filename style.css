@@ -103,6 +103,25 @@ main {
   background-size: 22px 22px;
 }
 
+.weekly-review {
+  margin-bottom: 16px;
+}
+
+.weekly-review-text {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+  margin: 10px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.weekly-review-text:empty::before {
+  content: "ボタンを押すと、AIが今週を振り返ります";
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .form-header {
   display: flex;
   align-items: center;

@@ -1,7 +1,9 @@
 const STORAGE_KEY = "lifelog.entries";
+const WEEKLY_REVIEW_KEY = "lifelog.weeklyReviews";
 
-// AIひとことコメントを生成するVercelサーバーレス関数のURL
+// AIひとことコメント・週の振り返りを生成するVercelサーバーレス関数のURL
 const AI_COMMENT_API_URL = "https://life-log-self.vercel.app/api/comment";
+const WEEKLY_REVIEW_API_URL = "https://life-log-self.vercel.app/api/weekly-review";
 
 const MOOD_EMOJI = {
   great: "😄",
@@ -36,11 +38,14 @@ const toast = document.getElementById("toast");
 const todayLabel = document.getElementById("todayLabel");
 const formHeader = document.getElementById("formHeader");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
-const formCard = document.querySelector(".card");
+const formCard = document.getElementById("entryFormCard");
 const exportBtn = document.getElementById("exportBtn");
 const importBtn = document.getElementById("importBtn");
 const importFile = document.getElementById("importFile");
 const shareTextBtn = document.getElementById("shareTextBtn");
+const weeklyReviewRange = document.getElementById("weeklyReviewRange");
+const weeklyReviewText = document.getElementById("weeklyReviewText");
+const weeklyReviewBtn = document.getElementById("weeklyReviewBtn");
 
 function loadEntries() {
   try {
@@ -52,6 +57,45 @@ function loadEntries() {
 
 function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function loadWeeklyReviews() {
+  try {
+    return JSON.parse(localStorage.getItem(WEEKLY_REVIEW_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveWeeklyReviews(reviews) {
+  localStorage.setItem(WEEKLY_REVIEW_KEY, JSON.stringify(reviews));
+}
+
+// 指定日を含む週の月曜日(0時)を返す
+function getWeekStart(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = d.getDay(); // 0=日, 1=月, ... 6=土
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  return d;
+}
+
+// 週の月曜日から、その週の日曜日(23:59:59)を返す
+function getWeekEnd(weekStart) {
+  const d = new Date(weekStart);
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function weekKey(weekStart) {
+  return toDateInputValue(weekStart);
+}
+
+function formatWeekRangeLabel(weekStart, weekEnd) {
+  const start = `${weekStart.getMonth() + 1}月${weekStart.getDate()}日(月)`;
+  const end = `${weekEnd.getMonth() + 1}月${weekEnd.getDate()}日(日)`;
+  return `${start}〜${end}`;
 }
 
 function formatDateLabel(date) {
@@ -203,6 +247,80 @@ function requestAiComment(id, mood, activities, memo) {
     renderHistory();
   });
 }
+
+async function fetchWeeklyReview(entries, weekLabel) {
+  try {
+    const payload = {
+      weekLabel,
+      entries: [...entries]
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .map((entry) => ({
+          date: formatFullDateLabel(new Date(entry.timestamp)),
+          mood: entry.mood,
+          activities: entry.activities,
+          memo: entry.memo,
+        })),
+    };
+    const response = await fetch(WEEKLY_REVIEW_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return typeof data.comment === "string" ? data.comment : null;
+  } catch {
+    return null;
+  }
+}
+
+function renderWeeklyReview() {
+  const weekStart = getWeekStart(new Date());
+  const weekEnd = getWeekEnd(weekStart);
+  const rangeLabel = formatWeekRangeLabel(weekStart, weekEnd);
+  weeklyReviewRange.textContent = `今週の振り返り(${rangeLabel})`;
+
+  const saved = loadWeeklyReviews()[weekKey(weekStart)];
+  if (saved) {
+    weeklyReviewText.textContent = saved.comment;
+    weeklyReviewBtn.textContent = "更新する";
+  } else {
+    weeklyReviewText.textContent = "";
+    weeklyReviewBtn.textContent = "振り返る";
+  }
+}
+
+weeklyReviewBtn.addEventListener("click", async () => {
+  const weekStart = getWeekStart(new Date());
+  const weekEnd = getWeekEnd(weekStart);
+  const weekStartTime = weekStart.getTime();
+  const weekEndTime = weekEnd.getTime();
+
+  const weekEntries = loadEntries().filter(
+    (entry) => entry.timestamp >= weekStartTime && entry.timestamp <= weekEndTime
+  );
+  if (weekEntries.length === 0) {
+    showToast("今週はまだ記録がありません");
+    return;
+  }
+
+  weeklyReviewBtn.disabled = true;
+  weeklyReviewText.textContent = "考え中…";
+
+  const comment = await fetchWeeklyReview(weekEntries, formatWeekRangeLabel(weekStart, weekEnd));
+
+  weeklyReviewBtn.disabled = false;
+  if (!comment) {
+    showToast("振り返りの取得に失敗しました");
+    renderWeeklyReview();
+    return;
+  }
+
+  const reviews = loadWeeklyReviews();
+  reviews[weekKey(weekStart)] = { comment, generatedAt: Date.now() };
+  saveWeeklyReviews(reviews);
+  renderWeeklyReview();
+});
 
 function showToast(message) {
   toast.textContent = message;
@@ -461,6 +579,7 @@ todayLabel.textContent = new Date().toLocaleDateString("ja-JP", {
 entryDateTime.value = toDateInputValue(new Date());
 
 renderHistory();
+renderWeeklyReview();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
